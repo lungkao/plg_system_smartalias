@@ -34,8 +34,17 @@ A Joomla system plugin that automatically generates SEO-friendly aliases for art
 
 - **Developer**: Phisan
 - **Website**: https://colorpack.co.th
-- **Email**: pisan@colorpack.co.th
-
+- 
 ## License
 
 GNU General Public License version 2 or later
+
+## 🙏 Credits
+Developed by Pisan Chueatchatchai 
+---
+
+## ☕ Support this Plugin
+
+If you find **Smart Image Path** helpful, you can support the developer by buying a coffee:
+
+👉 [Buy Me a Coffee](https://buymeacoffee.com/cheuachatchai)
