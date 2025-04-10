@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="plugin" group="system" method="upgrade" version="5.0">
+    <name>PLG_SYSTEM_SMARTALIAS</name>
+    <author>Phisan</author>
+    <creationDate>April 2025</creationDate>
+    <copyright>(C) 2025 Colorpack Creations Co.,Ltd.. All rights reserved.</copyright>
+    <license>GNU General Public License version 2 or later</license>
+    <authorEmail>pisan@colorpack.co.th</authorEmail>
+    <authorUrl>https://colorpack.co.th</authorUrl>
+    <version>1.0.0</version>
+    <description>PLG_SYSTEM_SMARTALIAS_DESC</description>
+    <files>
+        <filename plugin="smartalias">smartalias.php</filename>
+        <filename>index.html</filename>
+        <folder>language</folder>
+    </files>
+    <languages>
+        <language tag="en-GB">language/en-GB/plg_system_smartalias.ini</language>
+        <language tag="en-GB">language/en-GB/plg_system_smartalias.sys.ini</language>
+        <language tag="th-TH">language/th-TH/plg_system_smartalias.ini</language>
+        <language tag="th-TH">language/th-TH/plg_system_smartalias.sys.ini</language>
+    </languages>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field name="alias_length" 
+                    type="number" 
+                    default="100"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH_LABEL"
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH_DESC" />
+                <field name="append_id"
+                    type="radio"
+                    default="1"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID_LABEL"
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID_DESC">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="use_id_only"
+                    type="radio"
+                    default="0"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY_LABEL"
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY_DESC">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+                <field name="id_suffix"
+                    type="text"
+                    default=""
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_LABEL"
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC" />
+                <field
+                    name="show_char_counter"
+                    type="radio"
+                    label="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER_LABEL"
+                    description="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER_DESC"
+                    default="1"
+                    class="btn-group btn-group-yesno"
+                >
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+            </fieldset>
+        </fields>
+    </config>
+</extension>
