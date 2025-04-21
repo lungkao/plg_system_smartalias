@@ -26,12 +26,12 @@
                 <field name="alias_length" 
                     type="number" 
                     default="100"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH_LABEL"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH"
                     description="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH_DESC" />
                 <field name="append_id"
                     type="radio"
                     default="1"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID_LABEL"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID"
                     description="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID_DESC">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
@@ -39,7 +39,7 @@
                 <field name="use_id_only"
                     type="radio"
                     default="0"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY_LABEL"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY"
                     description="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY_DESC">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
@@ -47,12 +47,12 @@
                 <field name="id_suffix"
                     type="text"
                     default=""
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_LABEL"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX"
                     description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC" />
                 <field
                     name="show_char_counter"
                     type="radio"
-                    label="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER_LABEL"
+                    label="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER"
                     description="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER_DESC"
                     default="1"
                     class="btn-group btn-group-yesno"
