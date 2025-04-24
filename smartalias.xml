@@ -1,18 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <extension type="plugin" group="system" method="upgrade" version="5.0">
     <name>PLG_SYSTEM_SMARTALIAS</name>
-    <author>Phisan</author>
-    <creationDate>April 2025</creationDate>
-    <copyright>(C) 2025 Colorpack Creations Co.,Ltd.. All rights reserved.</copyright>
+    <author>Pisan Chueachatchai</author>
+    <authorEmail>office@colorpack.co.th</authorEmail>
+    <authorUrl>https://colorpack.co.th/</authorUrl>
+    <version>1.1.0</version>
+    <creationDate>April 24, 2025</creationDate>
+    <copyright>Copyright (C) 2025 Colorpack Creations Co.,Ltd. All rights reserved.</copyright>
     <license>GNU General Public License version 2 or later</license>
-    <authorEmail>pisan@colorpack.co.th</authorEmail>
-    <authorUrl>https://colorpack.co.th</authorUrl>
-    <version>1.0.0</version>
     <description>PLG_SYSTEM_SMARTALIAS_DESC</description>
     <files>
         <filename plugin="smartalias">smartalias.php</filename>
         <filename>index.html</filename>
-        <folder>language</folder>
     </files>
     <languages>
         <language tag="en-GB">language/en-GB/plg_system_smartalias.ini</language>
@@ -63,4 +62,7 @@
             </fieldset>
         </fields>
     </config>
+    <updateservers>
+        <server type="extension" priority="1" name="Smart Alias Updates">https://raw.githubusercontent.com/lungkao/plg_system_smartalias/main/updates.xml</server>
+    </updateservers>
 </extension>
