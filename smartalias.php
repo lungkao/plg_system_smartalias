@@ -75,6 +75,8 @@ class PlgSystemSmartalias extends CMSPlugin
             $buffer = $app->getBody();
             
             $charactersText = Text::_('PLG_SYSTEM_SMARTALIAS_CHARACTERS');
+            $clearAliasText = Text::_('PLG_SYSTEM_SMARTALIAS_CLEAR_ALIAS_BUTTON');
+            $clearAliasConfirmText = Text::_('PLG_SYSTEM_SMARTALIAS_CLEAR_ALIAS_CONFIRM');
             $showCharCounter = (int) $this->params->get('show_char_counter', 1);
             
             // Add toggle button styles and new JavaScript
@@ -87,13 +89,76 @@ class PlgSystemSmartalias extends CMSPlugin
                 const charactersText = '{$charactersText}';
                 let showCounter = {$showCharCounter};
 
-                // Add toggle button
+                // Add toggle button for character counter
                 const toggleBtn = document.createElement('button');
                 toggleBtn.type = 'button';
                 toggleBtn.className = 'btn btn-small';
                 toggleBtn.innerHTML = '<span class="icon-eye"></span>';
                 toggleBtn.style.marginLeft = '10px';
                 titleLabel.parentNode.insertBefore(toggleBtn, titleLabel.nextSibling);
+                
+                // Add clear alias button
+                if (aliasField && aliasLabel) {
+                    // สร้างปุ่มล้าง alias
+                    const clearBtn = document.createElement('button');
+                    clearBtn.type = 'button';
+                    clearBtn.className = 'btn btn-small btn-warning';
+                    clearBtn.innerHTML = '{$clearAliasText}';
+                    clearBtn.style.marginLeft = '10px';
+                    
+                    // สร้างฟังก์ชันอัพเดทตัวนับสำหรับ alias label
+                    function updateAliasCounter() {
+                        if (!aliasField || !aliasLabel) return;
+                        const length = aliasField.value.length;
+                        const originalText = aliasLabel.getAttribute('data-original') || aliasLabel.textContent;
+                        
+                        // เก็บตัวอ้างอิงถึง original text เพื่อใช้ในการอัพเดทภายหลัง
+                        if (!aliasLabel.getAttribute('data-original')) {
+                            aliasLabel.setAttribute('data-original', originalText);
+                        }
+                        
+                        // ล้างข้อความที่อาจมีอยู่เดิม
+                        aliasLabel.textContent = originalText;
+                        
+                        // เพิ่มตัวนับเข้าไป ถ้าเปิดใช้งาน
+                        if (showCounter) {
+                            const counterSpan = document.createElement('span');
+                            counterSpan.textContent = ' (' + length + ' ' + charactersText + ')';
+                            counterSpan.className = 'char-counter';
+                            aliasLabel.appendChild(counterSpan);
+                        }
+                        
+                        // แทรกปุ่มล้าง alias หลังจากตัวนับ
+                        aliasLabel.parentNode.insertBefore(clearBtn, aliasLabel.nextSibling);
+                    }
+                    
+                    // ใช้ฟังก์ชันที่สร้างขึ้นเพื่ออัพเดทตัวนับและแทรกปุ่ม
+                    updateAliasCounter();
+                    
+                    // อัพเดทตัวนับเมื่อมีการเปลี่ยนแปลงข้อความใน alias field
+                    aliasField.addEventListener('input', updateAliasCounter);
+                    
+                    // Function to clear alias field
+                    clearBtn.addEventListener('click', function() {
+                        if (confirm('{$clearAliasConfirmText}')) {
+                            aliasField.value = '';
+                            // อัพเดทตัวนับหลังล้างข้อความ
+                            updateAliasCounter();
+                            
+                            // Add visual confirmation
+                            const notification = document.createElement('div');
+                            notification.className = 'alert alert-success';
+                            notification.innerHTML = '<span class="icon-check"></span> Alias cleared. Save to generate a new alias.';
+                            notification.style.marginTop = '10px';
+                            aliasField.parentNode.appendChild(notification);
+                            
+                            // Remove notification after 3 seconds
+                            setTimeout(function() {
+                                notification.remove();
+                            }, 3000);
+                        }
+                    });
+                }
 
                 function updateCounter(field, label) {
                     if (!field || !label) return;
@@ -106,17 +171,17 @@ class PlgSystemSmartalias extends CMSPlugin
 
                 function toggleCounters() {
                     showCounter = !showCounter;
+                    // อัพเดทตัวนับสำหรับ title
                     updateCounter(titleField, titleLabel);
-                    updateCounter(aliasField, aliasLabel);
+                    
+                    // อัพเดทตัวนับสำหรับ alias ด้วยฟังก์ชันที่สร้างขึ้นใหม่
+                    if (aliasField && aliasLabel) {
+                        updateAliasCounter();
+                    }
+                    
                     toggleBtn.innerHTML = showCounter 
                         ? '<span class="icon-eye"></span>' 
                         : '<span class="icon-eye-close"></span>';
-                }
-
-                if (aliasField && aliasLabel) {
-                    aliasLabel.setAttribute('data-original', aliasLabel.textContent);
-                    updateCounter(aliasField, aliasLabel);
-                    aliasField.addEventListener('input', () => updateCounter(aliasField, aliasLabel));
                 }
 
                 if (titleField && titleLabel) {
