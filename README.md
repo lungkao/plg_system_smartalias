@@ -1,6 +1,6 @@
 # Smart Alias Plugin for Joomla
 
-## Version: 1.1.2 (April 24, 2025)
+## Version: 1.1.3 (April 24, 2025)
 
 A Joomla plugin for automatically generating SEO-friendly aliases for articles.
 
