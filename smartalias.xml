@@ -4,7 +4,7 @@
     <author>Pisan Chueachatchai</author>
     <authorEmail>office@colorpack.co.th</authorEmail>
     <authorUrl>https://colorpack.co.th/</authorUrl>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <creationDate>April 24, 2025</creationDate>
     <copyright>Copyright (C) 2025 Colorpack Creations Co.,Ltd. All rights reserved.</copyright>
     <license>GNU General Public License version 2 or later</license>
@@ -36,6 +36,21 @@
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>
+                <field name="id_position"
+                    type="radio"
+                    default="suffix"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION"
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_DESC"
+                    showon="append_id:1">
+                    <option value="prefix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_PREFIX</option>
+                    <option value="suffix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_SUFFIX</option>
+                </field>
+                <field name="id_separator"
+                    type="text"
+                    default="-"
+                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SEPARATOR"
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SEPARATOR_DESC"
+                    showon="append_id:1" />
                 <field name="use_id_only"
                     type="radio"
                     default="0"
@@ -48,15 +63,15 @@
                     type="text"
                     default=""
                     label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC" />
+                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC"
+                    showon="use_id_only:1" />
                 <field
                     name="show_char_counter"
                     type="radio"
                     label="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER"
                     description="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER_DESC"
                     default="1"
-                    class="btn-group btn-group-yesno"
-                >
+                    class="btn-group btn-group-yesno">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>

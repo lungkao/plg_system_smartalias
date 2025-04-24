@@ -1,6 +1,6 @@
 # Smart Alias Plugin for Joomla
 
-## Version: 1.1.0 (April 24, 2025)
+## Version: 1.1.2 (April 24, 2025)
 
 A Joomla plugin for automatically generating SEO-friendly aliases for articles.
 
@@ -9,6 +9,8 @@ A Joomla plugin for automatically generating SEO-friendly aliases for articles.
 - Automatically generate URL aliases from article titles
 - Limit alias length to a configurable maximum
 - Option to append article ID for uniqueness
+- Option to position ID before or after alias
+- Custom separator for ID and alias
 - Option to use only ID as alias
 - Character counter for title and alias fields
 - Clear alias button for easy regeneration
@@ -41,6 +43,8 @@ Both administrative interface and installation texts are localized.
 
 - **Maximum Alias Length**: Set the maximum number of characters for the alias. Leave blank or set to 0 for no limit.
 - **Append ID to Alias**: Choose whether to append the article ID to the alias if it is not unique.
+- **ID Position**: Choose whether to place the ID before (prefix) or after (suffix) the alias text.
+- **ID Separator**: Character(s) to use between the ID and the alias (default: hyphen).
 - **Use ID Only as Alias**: Choose whether to use only the article ID as the alias.
 - **ID Suffix**: Add a prefix text before the ID when using ID only. Leave blank for no prefix.
 - **Show Character Counter**: Enable or disable the character counter by default.
@@ -52,6 +56,24 @@ When editing an article:
 - Character counters show the length of both title and alias
 - Click the eye icon to toggle character counter visibility
 - Click the "Clear Alias" button to clear the existing alias and generate a new one on save
+
+## Examples
+
+### ID Position Examples:
+
+1. **ID as suffix (default)**: 
+   - Title: "My Article"
+   - Resulting alias: "my-article-123" (where 123 is the article ID)
+
+2. **ID as prefix**:
+   - Title: "My Article"
+   - Resulting alias: "123-my-article" (where 123 is the article ID)
+
+### Custom Separator Example:
+
+If you set the separator to "_" (underscore):
+- ID as suffix: "my-article_123"
+- ID as prefix: "123_my-article"
 
 ## FlexiContent Support
 

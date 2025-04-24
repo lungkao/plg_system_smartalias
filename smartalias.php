@@ -36,33 +36,64 @@ class PlgSystemSmartalias extends CMSPlugin
             // Get the maximum alias length from plugin parameters
             $maxLength = (int) $this->params->get('alias_length', 100);
 
-            // Limit the alias length if a maximum length is set
-            if ($maxLength > 0 && mb_strlen($alias, 'UTF-8') > $maxLength) {
-                $alias = mb_substr($alias, 0, $maxLength, 'UTF-8');
-            }
-
             // Check if "Append ID" is enabled
             $appendId = (int) $this->params->get('append_id', 1);
             if ($appendId && !$isNew && isset($article->id)) {
-                $idStr = '-' . $article->id;
+                // Get ID position (prefix or suffix)
+                $idPosition = $this->params->get('id_position', 'suffix');
                 
-                // If adding the ID exceeds our max length, we need to trim again
-                if ($maxLength > 0 && (mb_strlen($alias, 'UTF-8') + mb_strlen($idStr, 'UTF-8')) > $maxLength) {
-                    $idLength = mb_strlen($idStr, 'UTF-8');
-                    $titlePartLength = $maxLength - $idLength;
-                    
-                    if ($titlePartLength > 0) {
-                        // Trim title part to make room for the ID
-                        $alias = mb_substr($alias, 0, $titlePartLength, 'UTF-8');
-                    } else {
-                        // Edge case: ID alone would exceed max length
-                        $alias = mb_substr($idStr, 0, $maxLength, 'UTF-8');
-                    }
+                // Get separator (default: hyphen)
+                $idSeparator = $this->params->get('id_separator', '-');
+                
+                // Create ID string with separator
+                $idStr = (string) $article->id . $idSeparator;
+                if ($idPosition === 'suffix') {
+                    $idStr = $idSeparator . (string) $article->id;
                 }
                 
-                // เพิ่ม ID
-                if ($titlePartLength !== 0) {
-                    $alias .= $idStr;
+                // Calculate available space for the title part
+                if ($maxLength > 0) {
+                    $idLength = mb_strlen($idStr, 'UTF-8');
+                    
+                    if ($idPosition === 'prefix') {
+                        // If ID is prefix, we need to truncate the title part
+                        if (mb_strlen($idStr . $alias, 'UTF-8') > $maxLength) {
+                            $titleLength = $maxLength - $idLength;
+                            if ($titleLength > 0) {
+                                $alias = mb_substr($alias, 0, $titleLength, 'UTF-8');
+                            } else {
+                                // Edge case: ID alone would exceed max length
+                                $alias = mb_substr($idStr, 0, $maxLength, 'UTF-8');
+                            }
+                        }
+                        // Combine ID and alias
+                        $alias = $idStr . $alias;
+                    } else {
+                        // If ID is suffix (default), truncate title to fit ID
+                        if (mb_strlen($alias . $idStr, 'UTF-8') > $maxLength) {
+                            $titleLength = $maxLength - $idLength;
+                            if ($titleLength > 0) {
+                                $alias = mb_substr($alias, 0, $titleLength, 'UTF-8');
+                            } else {
+                                // Edge case: ID alone would exceed max length
+                                $alias = mb_substr($idStr, 0, $maxLength, 'UTF-8');
+                            }
+                        }
+                        // Combine alias and ID
+                        $alias = $alias . $idStr;
+                    }
+                } else {
+                    // No length limit, simply combine according to position
+                    if ($idPosition === 'prefix') {
+                        $alias = $idStr . $alias;
+                    } else {
+                        $alias = $alias . $idStr;
+                    }
+                }
+            } else {
+                // No ID to append, just limit the length if needed
+                if ($maxLength > 0 && mb_strlen($alias, 'UTF-8') > $maxLength) {
+                    $alias = mb_substr($alias, 0, $maxLength, 'UTF-8');
                 }
             }
 
