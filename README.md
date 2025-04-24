@@ -1,4 +1,9 @@
 # Smart Alias Plugin for Joomla
+## ☕ Support this Plugin
+
+If you find **Smart Image Path** helpful, you can support the developer by buying a coffee:
+
+👉&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="https://buymeacoffee.com/cheuachatchai" >![buy_me_a_coffee](https://github.com/conseilgouz/plg_system_cgwebp_j4/assets/19435246/4fda4cb5-64f1-4717-81ae-c71a0fc26c2d)</a>
 
 ## Version: 1.1.3 (April 24, 2025)
 
