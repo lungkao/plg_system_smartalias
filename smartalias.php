@@ -9,29 +9,24 @@ use Joomla\CMS\Language\Text;
 
 class PlgSystemSmartalias extends CMSPlugin
 {
-    protected $autoloadLanguage = true; // เพิ่มบรรทัดนี้เพื่อโหลดไฟล์ภาษาอัตโนมัติ
+    protected $autoloadLanguage = true;
 
     public function onContentBeforeSave($context, $article, $isNew)
     {
-        if ($context === 'com_content.article' && isset($article->title)) {
+        // ตรวจสอบว่าเป็นบทความหรือไม่
+        if (($context === 'com_content.article' || $context === 'com_flexicontent.item') && isset($article->title)) {
             // ปกป้อง alias เดิม
             if (!empty($article->alias)) {
-                // นับจำนวนตัวอักษรของ alias เดิม
-                $aliasLength = mb_strlen($article->alias, 'UTF-8');
-                Factory::getApplication()->enqueueMessage("Current alias length: {$aliasLength}");
                 return;
             }
 
             // Check if "Use ID Only" is enabled
             $useIdOnly = (int) $this->params->get('use_id_only', 0);
-            if ($useIdOnly) {
+            if ($useIdOnly && !$isNew && isset($article->id)) {
                 // Get the suffix from plugin parameters
                 $suffix = $this->params->get('id_suffix', '');
-                $article->alias = $suffix . '-' . (string) $article->id;
-
-                // นับจำนวนตัวอักษรของ alias ที่สร้างใหม่
-                $aliasLength = mb_strlen($article->alias, 'UTF-8');
-                Factory::getApplication()->enqueueMessage("Generated alias length: {$aliasLength}");
+                $separator = empty($suffix) ? '' : '-';
+                $article->alias = $suffix . $separator . (string) $article->id;
                 return;
             }
 
@@ -42,22 +37,33 @@ class PlgSystemSmartalias extends CMSPlugin
             $maxLength = (int) $this->params->get('alias_length', 100);
 
             // Limit the alias length if a maximum length is set
-            if ($maxLength > 0) {
+            if ($maxLength > 0 && mb_strlen($alias, 'UTF-8') > $maxLength) {
                 $alias = mb_substr($alias, 0, $maxLength, 'UTF-8');
             }
 
             // Check if "Append ID" is enabled
             $appendId = (int) $this->params->get('append_id', 1);
             if ($appendId && !$isNew && isset($article->id)) {
-                $alias .= '-' . $article->id;
-            }
-
-            // นับจำนวนตัวอักษรของ alias ที่สร้างใหม่
-            if (isset($alias)) {
-                $aliasLength = mb_strlen($alias, 'UTF-8');
-                Factory::getApplication()->enqueueMessage("Generated alias length: {$aliasLength}");
-            } else {
-                $aliasLength = 0; // กำหนดค่าเริ่มต้นในกรณีที่ $alias ไม่ถูกตั้งค่า
+                $idStr = '-' . $article->id;
+                
+                // If adding the ID exceeds our max length, we need to trim again
+                if ($maxLength > 0 && (mb_strlen($alias, 'UTF-8') + mb_strlen($idStr, 'UTF-8')) > $maxLength) {
+                    $idLength = mb_strlen($idStr, 'UTF-8');
+                    $titlePartLength = $maxLength - $idLength;
+                    
+                    if ($titlePartLength > 0) {
+                        // Trim title part to make room for the ID
+                        $alias = mb_substr($alias, 0, $titlePartLength, 'UTF-8');
+                    } else {
+                        // Edge case: ID alone would exceed max length
+                        $alias = mb_substr($idStr, 0, $maxLength, 'UTF-8');
+                    }
+                }
+                
+                // เพิ่ม ID
+                if ($titlePartLength !== 0) {
+                    $alias .= $idStr;
+                }
             }
 
             $article->alias = $alias;
@@ -68,7 +74,26 @@ class PlgSystemSmartalias extends CMSPlugin
     {
         $app = Factory::getApplication();
 
-        if ($app->isClient('administrator') && $app->input->get('option') === 'com_content' && $app->input->get('view') === 'article') {
+        // เพิ่มเงื่อนไขเพื่อรองรับ Flexicontent
+        $option = $app->input->get('option');
+        $view = $app->input->get('view');
+        
+        $supportedCombinations = [
+            // Joomla Core Articles
+            ['option' => 'com_content', 'view' => 'article'],
+            // Flexicontent Items
+            ['option' => 'com_flexicontent', 'view' => 'item']
+        ];
+        
+        $isSupported = false;
+        foreach ($supportedCombinations as $combo) {
+            if ($option === $combo['option'] && $view === $combo['view']) {
+                $isSupported = true;
+                break;
+            }
+        }
+
+        if ($app->isClient('administrator') && $isSupported) {
             $lang = Factory::getLanguage();
             $lang->load('plg_system_smartalias', JPATH_ADMINISTRATOR);
             
@@ -79,11 +104,14 @@ class PlgSystemSmartalias extends CMSPlugin
             $clearAliasConfirmText = Text::_('PLG_SYSTEM_SMARTALIAS_CLEAR_ALIAS_CONFIRM');
             $showCharCounter = (int) $this->params->get('show_char_counter', 1);
             
+            // Determine the correct field ID based on the component
+            $aliasFieldId = ($option === 'com_flexicontent') ? 'jform_alias' : 'jform_alias';
+            
             // Add toggle button styles and new JavaScript
             $script = <<<JS
             window.addEventListener('load', function() {
-                const aliasField = document.getElementById('jform_alias');
-                const aliasLabel = document.querySelector('label[for="jform_alias"]');
+                const aliasField = document.getElementById('{$aliasFieldId}');
+                const aliasLabel = document.querySelector('label[for="{$aliasFieldId}"]');
                 const titleField = document.getElementById('jform_title');
                 const titleLabel = document.querySelector('label[for="jform_title"]');
                 const charactersText = '{$charactersText}';

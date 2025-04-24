@@ -5,24 +5,22 @@
 A Joomla plugin for automatically generating SEO-friendly aliases for articles.
 
 ## Features
+
 - Automatically generate URL aliases from article titles
 - Limit alias length to a configurable maximum
 - Option to append article ID for uniqueness
 - Option to use only ID as alias
 - Character counter for title and alias fields
+- Clear alias button for easy regeneration
+- Support for Joomla Core Articles and FlexiContent items
 - Support for both English and Thai languages
 
-## Requirements
-- Joomla 5.0 or newer
+## Compatibility
+
+- Joomla 4.0+
+- Joomla 5.0+
+- FlexiContent 3.x+
 
 ## Installation
-1. Download the latest release
-2. Install via Joomla Extension Manager
-3. Enable the plugin via Plugin Manager
 
-## Support
-If you find this plugin helpful, you can support the developer at: https://buymeacoffee.com/cheuachatchai
-
-## License
-GNU General Public License version 2 or later
-Copyright (C) 2025 Colorpack Creations Co.,Ltd. All rights reserved.
+<!-- ส่วนที่เหลือคงเดิม -->

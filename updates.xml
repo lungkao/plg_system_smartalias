@@ -12,7 +12,8 @@
         <downloads>
             <downloadurl type="full" format="zip">https://github.com/lungkao/plg_system_smartalias/archive/refs/tags/v1.0.0.zip</downloadurl>
         </downloads>
-        <targetplatform name="joomla" version="5.[0]"/>
+        <!-- แก้ไขเพื่อรองรับทั้ง Joomla 4 และ 5 -->
+        <targetplatform name="joomla" version="4.[0123456789]|5.[0]"/>
         <maintainer>Pisan Chueachatchai</maintainer>
         <maintainerurl>https://colorpack.co.th</maintainerurl>
     </update>
