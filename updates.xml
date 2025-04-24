@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <updates>
     <update>
-        <name>System - Smart Alias</name>
-        <description>Smart Alias Plugin for Joomla with ID positioning options</description>
+        <name>Smart Alias</name>
+        <description>Smart Alias Plugin for Joomla</description>
         <element>smartalias</element>
         <type>plugin</type>
         <folder>system</folder>
-        <version>1.1.3</version>
         <client>site</client>
-        <infourl title="Smart Alias">https://github.com/lungkao/plg_system_smartalias/releases/tag/v1.1.3</infourl>
+        <version>1.1.4</version>
+        <infourl title="Smart Alias Plugin">https://github.com/lungkao/plg_system_smartalias</infourl>
         <downloads>
-            <downloadurl type="full" format="zip">https://github.com/lungkao/plg_system_smartalias/archive/refs/tags/v1.1.3.zip</downloadurl>
+            <downloadurl type="full" format="zip">https://github.com/lungkao/plg_system_smartalias/releases/download/v1.1.4/plg_system_smartalias_v1.1.4.zip</downloadurl>
         </downloads>
-        <targetplatform name="joomla" version="4.[0123456789]|5.[0]"/>
-        <maintainer>Pisan Chueachatchai</maintainer>
-        <maintainerurl>https://colorpack.co.th</maintainerurl>
+        <tags>
+            <tag>stable</tag>
+        </tags>
+        <targetplatform name="joomla" version="4.[0123456789]|5.[0123456789]" />
+        <php_minimum>7.4.0</php_minimum>
     </update>
 </updates>
