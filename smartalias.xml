@@ -4,12 +4,11 @@
     <author>Pisan Chueachatchai</author>
     <authorEmail>office@colorpack.co.th</authorEmail>
     <authorUrl>https://colorpack.co.th/</authorUrl>
-    <version>1.1.3</version>
-    <creationDate>April 24, 2025</creationDate>
-    <copyright>Copyright (C) 2025 Colorpack Creations Co.,Ltd. All rights reserved.</copyright>
+    <version>1.1.4</version>
+    <creationDate>April 24, 2024</creationDate>
+    <copyright>Copyright (C) 2024 Colorpack Creations Co.,Ltd. All rights reserved.</copyright>
     <license>GNU General Public License version 2 or later</license>
     <description>PLG_SYSTEM_SMARTALIAS_DESC</description>
-    <!-- เปลี่ยนจาก version="5.0" เป็นไม่ระบุเวอร์ชัน เพื่อให้ใช้ได้ทั้ง J4 และ J5 -->
     <files>
         <filename plugin="smartalias">smartalias.php</filename>
         <filename>index.html</filename>
@@ -23,55 +22,65 @@
     <config>
         <fields name="params">
             <fieldset name="basic">
-                <field name="alias_length" 
-                    type="number" 
-                    default="100"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ALIAS_LENGTH_DESC" />
+                <!-- ค่าความยาวสูงสุดของ alias -->
+                <field name="alias_length"
+                       type="number"
+                       default="100"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_MAX_LENGTH"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_MAX_LENGTH_DESC"
+                       min="0"
+                       step="1" />
+
+                <!-- ฟิลด์สำหรับเปิด/ปิดการเพิ่ม ID -->
                 <field name="append_id"
-                    type="radio"
-                    default="1"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID_DESC">
+                       type="radio"
+                       default="1"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_APPEND_ID_DESC"
+                       class="btn-group btn-group-yesno">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>
+
+                <!-- ฟิลด์สำหรับใช้ ID อย่างเดียว แสดงเมื่อ append_id เป็น Yes -->
+                <field name="use_id_only"
+                       type="radio"
+                       default="0"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY_DESC"
+                       showon="append_id:1"
+                       class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+
+                <!-- ฟิลด์สำหรับคำนำหน้า ID แสดงเมื่อ use_id_only เป็น Yes -->
+                <field name="id_suffix"
+                       type="text"
+                       default=""
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC"
+                       showon="append_id:1[AND]use_id_only:1" />
+
+                <!-- ฟิลด์สำหรับตำแหน่งของ ID แสดงเมื่อไม่ได้ใช้ ID อย่างเดียว -->
                 <field name="id_position"
-                    type="radio"
-                    default="suffix"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_DESC"
-                    showon="append_id:1">
+                       type="radio"
+                       default="suffix"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_DESC"
+                       showon="append_id:1[AND]use_id_only:0"
+                       class="btn-group">
                     <option value="prefix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_PREFIX</option>
                     <option value="suffix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_SUFFIX</option>
                 </field>
-                <field name="id_separator"
-                    type="text"
-                    default="-"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SEPARATOR"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SEPARATOR_DESC"
-                    showon="append_id:1" />
-                <field name="use_id_only"
-                    type="radio"
-                    default="0"
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_USE_ID_ONLY_DESC">
-                    <option value="1">JYES</option>
-                    <option value="0">JNO</option>
-                </field>
-                <field name="id_suffix"
-                    type="text"
-                    default=""
-                    label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX"
-                    description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC"
-                    showon="use_id_only:1" />
-                <field
-                    name="show_char_counter"
-                    type="radio"
-                    label="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER"
-                    description="PLG_SYSTEM_SMARTALIAS_SHOW_CHAR_COUNTER_DESC"
-                    default="1"
-                    class="btn-group btn-group-yesno">
+
+                <!-- ฟิลด์สำหรับแสดงตัวนับอักขระ -->
+                <field name="show_char_counter"
+                       type="radio"
+                       default="1"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_SHOW_CHAR_COUNTER"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_SHOW_CHAR_COUNTER_DESC"
+                       class="btn-group btn-group-yesno">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>

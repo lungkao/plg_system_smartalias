@@ -15,95 +15,187 @@ class PlgSystemSmartalias extends CMSPlugin
     {
         // ตรวจสอบว่าเป็นบทความหรือไม่
         if (($context === 'com_content.article' || $context === 'com_flexicontent.item') && isset($article->title)) {
-            // Check if "Use ID Only" is enabled
-            $useIdOnly = (int) $this->params->get('use_id_only', 0);
+            $app = Factory::getApplication();
             
-            // ถ้าใช้ ID อย่างเดียว และมี ID
-            if ($useIdOnly && isset($article->id) && !empty($article->id)) {
-                // Get the suffix from plugin parameters
-                $suffix = $this->params->get('id_suffix', '');
-                $separator = empty($suffix) ? '' : '-';
-                $article->alias = $suffix . $separator . (string) $article->id;
-                return;
-            }
-
-            // ปกป้อง alias เดิม - ย้ายไปหลังการตรวจสอบ useIdOnly
+            // ดึงค่าพารามิเตอร์
+            $params = $this->getPluginParams();
+            $maxLength = (int) $params->get('alias_length', 100);
+            $appendId = (int) $params->get('append_id', 1);
+            $useIdOnly = (int) $params->get('use_id_only', 0);
+            
+            // ตรวจสอบความยาวของ alias ที่มีอยู่ 
+            $aliasNeedsProcessing = false;
+            
             if (!empty($article->alias)) {
+                // ถ้ามี alias อยู่แล้ว แต่เป็นโหมด ID only ให้ทำงานต่อ
+                if ($appendId && $useIdOnly && isset($article->id) && !empty($article->id)) {
+                    $aliasNeedsProcessing = true;
+                } 
+                // ตรวจสอบความยาว alias ที่มีอยู่
+                else if ($maxLength > 0 && mb_strlen($article->alias, 'UTF-8') > $maxLength) {
+                    $aliasNeedsProcessing = true;
+                }
+                // ตรวจสอบว่ามี ID หรือไม่
+                else if ($appendId && !$isNew && isset($article->id) && !empty($article->id)) {
+                    // ตรวจสอบว่า alias ปัจจุบันมี ID อยู่หรือไม่
+                    $idStr = (string) $article->id;
+                    $hasId = (strpos($article->alias, $idStr) !== false);
+                    
+                    if (!$hasId) {
+                        $aliasNeedsProcessing = true;
+                    }
+                }
+                
+                // ถ้าไม่ต้องทำอะไรกับ alias ให้ออกจากฟังก์ชัน
+                if (!$aliasNeedsProcessing) {
+                    return;
+                }
+            }
+            
+            // กรณี 1: ใช้ ID อย่างเดียว
+            if ($appendId && $useIdOnly && isset($article->id) && !empty($article->id)) {
+                $this->applyIdOnlyAlias($article, $params);
                 return;
             }
             
-            // ส่วนที่เหลือของโค้ดเดิม...
-            // Generate SEO-friendly alias from the article title
-            $alias = OutputFilter::stringURLSafe($article->title);
+            // กรณี 2: สร้าง alias จากชื่อบทความ + ตัดความยาว + อาจเพิ่ม ID
+            
+            // ถ้ามี alias อยู่แล้ว ใช้ alias ที่มีอยู่เป็นฐาน แทนที่จะสร้างใหม่จากชื่อเรื่อง
+            if (!empty($article->alias) && $aliasNeedsProcessing) {
+                $this->processExistingAlias($article, $params, $isNew);
+            } else {
+                $this->generateNormalAlias($article, $params, $isNew);
+            }
+        }
+    }
 
-            // Get the maximum alias length from plugin parameters
-            $maxLength = (int) $this->params->get('alias_length', 100);
+    /**
+     * ดึงค่าพารามิเตอร์ของปลั๊กอินจากฐานข้อมูล
+     */
+    private function getPluginParams()
+    {
+        $db = Factory::getDbo();
+        $query = $db->getQuery(true)
+            ->select($db->quoteName('params'))
+            ->from($db->quoteName('#__extensions'))
+            ->where($db->quoteName('type') . ' = ' . $db->quote('plugin'))
+            ->where($db->quoteName('folder') . ' = ' . $db->quote('system'))
+            ->where($db->quoteName('element') . ' = ' . $db->quote('smartalias'));
+        $db->setQuery($query);
+        $rawParams = $db->loadResult();
+        return new \Joomla\Registry\Registry($rawParams);
+    }
 
-            // Limit the alias length if a maximum length is set
-            if ($maxLength > 0 && mb_strlen($alias, 'UTF-8') > $maxLength) {
+    /**
+     * สร้าง alias โดยใช้ ID อย่างเดียว
+     */
+    private function applyIdOnlyAlias($article, $params)
+    {
+        $app = Factory::getApplication();
+        
+        // ดึงค่า ID Suffix (คำนำหน้า ID)
+        $suffix = $params->get('id_suffix', '');
+        
+        // ตรวจสอบว่า suffix มีเฉพาะตัวอักษรภาษาอังกฤษหรือไม่
+        if (!empty($suffix) && !preg_match('/^[a-zA-Z0-9_-]+$/', $suffix)) {
+            if ($app->isClient('administrator')) {
+                $app->enqueueMessage("คำนำหน้า ID ต้องเป็นตัวอักษรภาษาอังกฤษเท่านั้น", 'warning');
+            }
+            $suffix = '';
+        }
+        
+        // กำหนดตัวคั่นเป็น - เสมอเมื่อมี suffix
+        $separator = empty($suffix) ? '' : '-';
+        
+        // สร้าง alias แบบ ID only
+        $article->alias = $suffix . $separator . (string) $article->id;
+    }
+
+    /**
+     * สร้าง alias ปกติ + ตัดความยาว + อาจเพิ่ม ID
+     */
+    private function generateNormalAlias($article, $params, $isNew)
+    {
+        $app = Factory::getApplication();
+        $maxLength = (int) $params->get('alias_length', 100);
+        $appendId = (int) $params->get('append_id', 1);
+        
+        // สร้าง alias จากชื่อบทความ
+        $alias = OutputFilter::stringURLSafe($article->title);
+        
+        // ตัดความยาวของ alias
+        if ($maxLength > 0) {
+            $originalLength = mb_strlen($alias, 'UTF-8');
+            if ($originalLength > $maxLength) {
                 $alias = mb_substr($alias, 0, $maxLength, 'UTF-8');
             }
-
-            // Check if "Append ID" is enabled
-            $appendId = (int) $this->params->get('append_id', 1);
-            if ($appendId && !$isNew && isset($article->id)) {
-                // Get ID position (prefix or suffix)
-                $idPosition = $this->params->get('id_position', 'suffix');
-                
-                // Get separator (default: hyphen)
-                $idSeparator = $this->params->get('id_separator', '-');
-                
-                // Create ID string
-                $idStr = (string) $article->id;
-                
-                // Calculate available space for the title part
-                if ($maxLength > 0) {
-                    $idWithSepLength = mb_strlen($idStr . $idSeparator, 'UTF-8');
-                    
-                    if ($idPosition === 'prefix') {
-                        // If ID is prefix, we need to truncate the title part if needed
-                        if (mb_strlen($idStr . $idSeparator . $alias, 'UTF-8') > $maxLength) {
-                            $titlePartLength = $maxLength - $idWithSepLength;
-                            if ($titlePartLength > 0) {
-                                $alias = mb_substr($alias, 0, $titlePartLength, 'UTF-8');
-                            } else {
-                                // Edge case: ID alone would exceed max length
-                                $alias = mb_substr($idStr, 0, $maxLength, 'UTF-8');
-                            }
-                        }
-                        // Combine ID and alias
-                        $alias = $idStr . $idSeparator . $alias;
-                    } else {
-                        // If ID is suffix (default), truncate title to fit ID if needed
-                        if (mb_strlen($alias . $idSeparator . $idStr, 'UTF-8') > $maxLength) {
-                            $titlePartLength = $maxLength - $idWithSepLength;
-                            if ($titlePartLength > 0) {
-                                $alias = mb_substr($alias, 0, $titlePartLength, 'UTF-8');
-                            } else {
-                                // Edge case: ID alone would exceed max length
-                                $alias = mb_substr($idStr, 0, $maxLength, 'UTF-8');
-                            }
-                        }
-                        // Combine alias and ID
-                        $alias = $alias . $idSeparator . $idStr;
-                    }
-                } else {
-                    // No length limit, simply combine according to position
-                    if ($idPosition === 'prefix') {
-                        $alias = $idStr . $idSeparator . $alias;
-                    } else {
-                        $alias = $alias . $idSeparator . $idStr;
-                    }
-                }
+        }
+        
+        // เพิ่ม ID ถ้าเปิดใช้งานและเป็นบทความเดิม
+        if ($appendId && !$isNew && isset($article->id) && !empty($article->id)) {
+            $idPosition = $params->get('id_position', 'suffix');
+            // บังคับใช้ - เป็นตัวคั่น
+            $idSeparator = '-';
+            $idStr = (string) $article->id;
+            
+            if ($idPosition === 'prefix') {
+                $alias = $idStr . $idSeparator . $alias;
             } else {
-                // No ID to append, just limit the length if needed
-                if ($maxLength > 0 && mb_strlen($alias, 'UTF-8') > $maxLength) {
-                    $alias = mb_substr($alias, 0, $maxLength, 'UTF-8');
+                $alias = $alias . $idSeparator . $idStr;
+            }
+        }
+        
+        // กำหนดค่า alias ให้กับบทความ
+        $article->alias = $alias;
+    }
+
+    /**
+     * ประมวลผล alias ที่มีอยู่แล้ว (ตัดความยาวหรือเพิ่ม ID)
+     */
+    private function processExistingAlias($article, $params, $isNew)
+    {
+        $app = Factory::getApplication();
+        $maxLength = (int) $params->get('alias_length', 100);
+        $appendId = (int) $params->get('append_id', 1);
+        
+        // เก็บ alias เดิม
+        $alias = $article->alias;
+        
+        // ตัดความยาวของ alias ถ้าจำเป็น
+        if ($maxLength > 0) {
+            $originalLength = mb_strlen($alias, 'UTF-8');
+            
+            // ถ้าจะเพิ่ม ID และไม่ใช่บทความใหม่ ให้คำนวณพื้นที่สำหรับ ID
+            $idSpace = 0;
+            if ($appendId && !$isNew && isset($article->id) && !empty($article->id)) {
+                $idStr = (string) $article->id;
+                $idSpace = mb_strlen($idStr, 'UTF-8') + 1; // +1 สำหรับตัวคั่น (-)
+            }
+            
+            // ตัดความยาวโดยคำนึงถึงพื้นที่สำหรับ ID
+            if ($originalLength > ($maxLength - $idSpace) && $maxLength > $idSpace) {
+                $alias = mb_substr($alias, 0, $maxLength - $idSpace, 'UTF-8');
+            }
+        }
+        
+        // เพิ่ม ID ถ้าเปิดใช้งานและเป็นบทความเดิม
+        if ($appendId && !$isNew && isset($article->id) && !empty($article->id)) {
+            // ตรวจสอบว่ามี ID อยู่แล้วหรือไม่
+            $idStr = (string) $article->id;
+            if (strpos($alias, $idStr) === false) {
+                $idPosition = $params->get('id_position', 'suffix');
+                $idSeparator = '-';
+                
+                if ($idPosition === 'prefix') {
+                    $alias = $idStr . $idSeparator . $alias;
+                } else {
+                    $alias = $alias . $idSeparator . $idStr;
                 }
             }
-
-            $article->alias = $alias;
         }
+        
+        // กำหนดค่า alias ให้กับบทความ
+        $article->alias = $alias;
     }
 
     public function onAfterRender()
@@ -136,14 +228,12 @@ class PlgSystemSmartalias extends CMSPlugin
             $buffer = $app->getBody();
             
             $charactersText = Text::_('PLG_SYSTEM_SMARTALIAS_CHARACTERS');
-            $clearAliasText = Text::_('PLG_SYSTEM_SMARTALIAS_CLEAR_ALIAS_BUTTON');
-            $clearAliasConfirmText = Text::_('PLG_SYSTEM_SMARTALIAS_CLEAR_ALIAS_CONFIRM');
             $showCharCounter = (int) $this->params->get('show_char_counter', 1);
             
             // Determine the correct field ID based on the component
             $aliasFieldId = ($option === 'com_flexicontent') ? 'jform_alias' : 'jform_alias';
             
-            // Add toggle button styles and new JavaScript
+            // Add JavaScript
             $script = <<<JS
             window.addEventListener('load', function() {
                 const aliasField = document.getElementById('{$aliasFieldId}');
@@ -151,26 +241,10 @@ class PlgSystemSmartalias extends CMSPlugin
                 const titleField = document.getElementById('jform_title');
                 const titleLabel = document.querySelector('label[for="jform_title"]');
                 const charactersText = '{$charactersText}';
-                let showCounter = {$showCharCounter};
-
-                // Add toggle button for character counter
-                const toggleBtn = document.createElement('button');
-                toggleBtn.type = 'button';
-                toggleBtn.className = 'btn btn-small';
-                toggleBtn.innerHTML = '<span class="icon-eye"></span>';
-                toggleBtn.style.marginLeft = '10px';
-                titleLabel.parentNode.insertBefore(toggleBtn, titleLabel.nextSibling);
+                let showCounter = {$showCharCounter}; // ยังคงใช้ตัวแปรนี้เพื่อควบคุมการแสดงตัวนับตาม plugin setting
                 
-                // Add clear alias button
-                if (aliasField && aliasLabel) {
-                    // สร้างปุ่มล้าง alias
-                    const clearBtn = document.createElement('button');
-                    clearBtn.type = 'button';
-                    clearBtn.className = 'btn btn-small btn-warning';
-                    clearBtn.innerHTML = '{$clearAliasText}';
-                    clearBtn.style.marginLeft = '10px';
-                    
-                    // สร้างฟังก์ชันอัพเดทตัวนับสำหรับ alias label
+                // สำหรับช่อง Alias เพียงแสดงตัวนับอักขระ (ไม่มีปุ่มล้าง)
+                if (aliasField && aliasLabel && showCounter) {
                     function updateAliasCounter() {
                         if (!aliasField || !aliasLabel) return;
                         const length = aliasField.value.length;
@@ -191,70 +265,33 @@ class PlgSystemSmartalias extends CMSPlugin
                             counterSpan.className = 'char-counter';
                             aliasLabel.appendChild(counterSpan);
                         }
-                        
-                        // แทรกปุ่มล้าง alias หลังจากตัวนับ
-                        aliasLabel.parentNode.insertBefore(clearBtn, aliasLabel.nextSibling);
                     }
                     
-                    // ใช้ฟังก์ชันที่สร้างขึ้นเพื่ออัพเดทตัวนับและแทรกปุ่ม
+                    // ใช้ฟังก์ชันที่สร้างขึ้นเพื่ออัพเดทตัวนับ
                     updateAliasCounter();
                     
                     // อัพเดทตัวนับเมื่อมีการเปลี่ยนแปลงข้อความใน alias field
                     aliasField.addEventListener('input', updateAliasCounter);
-                    
-                    // Function to clear alias field
-                    clearBtn.addEventListener('click', function() {
-                        if (confirm('{$clearAliasConfirmText}')) {
-                            aliasField.value = '';
-                            // อัพเดทตัวนับหลังล้างข้อความ
-                            updateAliasCounter();
-                            
-                            // Add visual confirmation
-                            const notification = document.createElement('div');
-                            notification.className = 'alert alert-success';
-                            notification.innerHTML = '<span class="icon-check"></span> Alias cleared. Save to generate a new alias.';
-                            notification.style.marginTop = '10px';
-                            aliasField.parentNode.appendChild(notification);
-                            
-                            // Remove notification after 3 seconds
-                            setTimeout(function() {
-                                notification.remove();
-                            }, 3000);
+                }
+
+                // สำหรับช่อง Title ยังคงแสดงตัวนับตามการตั้งค่า
+                if (titleField && titleLabel && showCounter) {
+                    function updateTitleCounter() {
+                        if (!titleField || !titleLabel) return;
+                        const length = titleField.value.length;
+                        const originalText = titleLabel.getAttribute('data-original') || titleLabel.textContent;
+                        
+                        // เก็บตัวอ้างอิงถึง original text เพื่อใช้ในการอัพเดทภายหลัง
+                        if (!titleLabel.getAttribute('data-original')) {
+                            titleLabel.setAttribute('data-original', originalText);
                         }
-                    });
-                }
-
-                function updateCounter(field, label) {
-                    if (!field || !label) return;
-                    const length = field.value.length;
-                    const originalText = label.getAttribute('data-original') || label.textContent;
-                    label.textContent = showCounter 
-                        ? originalText + ' (' + length + ' ' + charactersText + ')'
-                        : originalText;
-                }
-
-                function toggleCounters() {
-                    showCounter = !showCounter;
-                    // อัพเดทตัวนับสำหรับ title
-                    updateCounter(titleField, titleLabel);
-                    
-                    // อัพเดทตัวนับสำหรับ alias ด้วยฟังก์ชันที่สร้างขึ้นใหม่
-                    if (aliasField && aliasLabel) {
-                        updateAliasCounter();
+                        
+                        titleLabel.textContent = originalText + ' (' + length + ' ' + charactersText + ')';
                     }
-                    
-                    toggleBtn.innerHTML = showCounter 
-                        ? '<span class="icon-eye"></span>' 
-                        : '<span class="icon-eye-close"></span>';
-                }
 
-                if (titleField && titleLabel) {
-                    titleLabel.setAttribute('data-original', titleLabel.textContent);
-                    updateCounter(titleField, titleLabel);
-                    titleField.addEventListener('input', () => updateCounter(titleField, titleLabel));
+                    updateTitleCounter();
+                    titleField.addEventListener('input', updateTitleCounter);
                 }
-
-                toggleBtn.addEventListener('click', toggleCounters);
             });
             JS;
 
