@@ -13,60 +13,42 @@ class PlgSystemSmartalias extends CMSPlugin
 
     public function onContentBeforeSave($context, $article, $isNew)
     {
-        // ตรวจสอบว่าเป็นบทความหรือไม่
-        if (($context === 'com_content.article' || $context === 'com_flexicontent.item') && isset($article->title)) {
-            $app = Factory::getApplication();
+        // ถ้าไม่ใช่บทความหรือ item ใน FlexiContent ให้ออกจากฟังก์ชัน
+        if (($context !== 'com_content.article' && $context !== 'com_flexicontent.item') || !isset($article->title)) {
+            return true;
+        }
+        
+        // โหลดพารามิเตอร์
+        $params = $this->params;
+        $forceWhenEmpty = (int) $params->get('force_alias_when_empty', 1);
+        
+        // ตรวจสอบเงื่อนไขการสร้าง alias ใหม่
+        $needNewAlias = $isNew || empty($article->alias);
+        
+        // ถ้าเปิดใช้งานการบังคับสร้าง alias เมื่อช่องว่าง ให้ตรวจสอบว่า field ว่างหรือไม่
+        if (!$needNewAlias && $forceWhenEmpty) {
+            // ตรวจสอบหา alias ในการส่งข้อมูลฟอร์ม
+            $jinput = Factory::getApplication()->input;
+            $formData = $jinput->get('jform', array(), 'array');
             
-            // ดึงค่าพารามิเตอร์
-            $params = $this->getPluginParams();
-            $maxLength = (int) $params->get('alias_length', 100);
-            $appendId = (int) $params->get('append_id', 1);
-            $useIdOnly = (int) $params->get('use_id_only', 0);
-            
-            // ตรวจสอบความยาวของ alias ที่มีอยู่ 
-            $aliasNeedsProcessing = false;
-            
-            if (!empty($article->alias)) {
-                // ถ้ามี alias อยู่แล้ว แต่เป็นโหมด ID only ให้ทำงานต่อ
-                if ($appendId && $useIdOnly && isset($article->id) && !empty($article->id)) {
-                    $aliasNeedsProcessing = true;
-                } 
-                // ตรวจสอบความยาว alias ที่มีอยู่
-                else if ($maxLength > 0 && mb_strlen($article->alias, 'UTF-8') > $maxLength) {
-                    $aliasNeedsProcessing = true;
-                }
-                // ตรวจสอบว่ามี ID หรือไม่
-                else if ($appendId && !$isNew && isset($article->id) && !empty($article->id)) {
-                    // ตรวจสอบว่า alias ปัจจุบันมี ID อยู่หรือไม่
-                    $idStr = (string) $article->id;
-                    $hasId = (strpos($article->alias, $idStr) !== false);
-                    
-                    if (!$hasId) {
-                        $aliasNeedsProcessing = true;
-                    }
-                }
-                
-                // ถ้าไม่ต้องทำอะไรกับ alias ให้ออกจากฟังก์ชัน
-                if (!$aliasNeedsProcessing) {
-                    return;
-                }
-            }
-            
-            // กรณี 1: ใช้ ID อย่างเดียว
-            if ($appendId && $useIdOnly && isset($article->id) && !empty($article->id)) {
-                $this->applyIdOnlyAlias($article, $params);
-                return;
-            }
-            
-            // กรณี 2: สร้าง alias จากชื่อบทความ + ตัดความยาว + อาจเพิ่ม ID
-            
-            // ถ้ามี alias อยู่แล้ว ใช้ alias ที่มีอยู่เป็นฐาน แทนที่จะสร้างใหม่จากชื่อเรื่อง
-            if (!empty($article->alias) && $aliasNeedsProcessing) {
-                $this->processExistingAlias($article, $params, $isNew);
-            } else {
-                $this->generateNormalAlias($article, $params, $isNew);
+            // ตรวจสอบให้แน่ใจว่าเฉพาะเมื่อผู้ใช้ส่งฟอร์มมาด้วยช่อง alias ว่างเปล่า
+            // แต่ใน $article->alias มีค่า (ค่าจาก DB) คือ ผู้ใช้ตั้งใจล้างช่อง alias
+            if (isset($formData['alias']) && $formData['alias'] === '' && !empty($article->alias)) {
+                $needNewAlias = true;
+                $article->alias = ''; // กำหนดให้ alias ว่างเพื่อให้ระบบสร้างใหม่
             }
         }
+        
+        if ($needNewAlias) {
+            // สร้าง alias จากชื่อบทความ
+            $this->createAliasFromTitle($article, $params);
+        } else {
+            // ถ้าเป็นบทความที่มีอยู่แล้วและ alias ไม่ว่าง ให้ประมวลผลเฉพาะการเพิ่ม ID (ถ้าตั้งค่าไว้)
+            // แต่ไม่ต้องตัดความยาวหรือสร้าง alias ใหม่
+            $this->processExistingAlias($article, $params, $isNew);
+        }
+        
+        return true;
     }
 
     /**
@@ -93,22 +75,22 @@ class PlgSystemSmartalias extends CMSPlugin
     {
         $app = Factory::getApplication();
         
-        // ดึงค่า ID Suffix (คำนำหน้า ID)
-        $suffix = $params->get('id_suffix', '');
-        
-        // ตรวจสอบว่า suffix มีเฉพาะตัวอักษรภาษาอังกฤษหรือไม่
-        if (!empty($suffix) && !preg_match('/^[a-zA-Z0-9_-]+$/', $suffix)) {
+        // ดึงค่า ID Prefix (คำนำหน้า ID)
+        $prefix = $params->get('id_prefix', '');
+
+        // ตรวจสอบว่า prefix มีเฉพาะตัวอักษรภาษาอังกฤษหรือไม่
+        if (!empty($prefix) && !preg_match('/^[a-zA-Z0-9_-]+$/', $prefix)) {
             if ($app->isClient('administrator')) {
                 $app->enqueueMessage("คำนำหน้า ID ต้องเป็นตัวอักษรภาษาอังกฤษเท่านั้น", 'warning');
             }
-            $suffix = '';
+            $prefix = '';
         }
-        
-        // กำหนดตัวคั่นเป็น - เสมอเมื่อมี suffix
-        $separator = empty($suffix) ? '' : '-';
-        
+
+        // กำหนดตัวคั่นเป็น - เสมอเมื่อมี prefix
+        $separator = empty($prefix) ? '' : '-';
+
         // สร้าง alias แบบ ID only
-        $article->alias = $suffix . $separator . (string) $article->id;
+        $article->alias = $prefix . $separator . (string) $article->id;
     }
 
     /**
@@ -150,16 +132,118 @@ class PlgSystemSmartalias extends CMSPlugin
     }
 
     /**
-     * ประมวลผล alias ที่มีอยู่แล้ว (ตัดความยาวหรือเพิ่ม ID)
+     * สร้าง alias จากชื่อบทความ
+     *
+     * @param   object  $article  ออบเจ็กต์บทความ
+     * @param   object  $params   พารามิเตอร์ของปลั๊กอิน
+     * @return  void
+     */
+    private function createAliasFromTitle($article, $params)
+    {
+        // ชื่อบทความ
+        $title = $article->title;
+
+        // สร้าง alias จาก title
+        $alias = OutputFilter::stringURLSafe($title);
+
+        // ถ้า alias ว่างเปล่า ให้ใช้วันที่ปัจจุบันแทน
+        if (empty($alias)) {
+            $alias = Factory::getDate()->format('Y-m-d-H-i-s');
+        }
+
+        // ตัดความยาวและเพิ่ม ID (ถ้าตั้งค่าไว้)
+        $alias = $this->processAliasLength($alias, $params, $article, false);
+
+        // กำหนด alias ให้บทความ
+        $article->alias = $alias;
+    }
+
+    /**
+     * ประมวลผล alias ที่มีอยู่แล้ว
+     *
+     * @param   object  $article  ออบเจ็กต์บทความ
+     * @param   object  $params   พารามิเตอร์ของปลั๊กอิน
+     * @param   bool    $isNew    เป็นบทความใหม่หรือไม่
+     * @return  void
      */
     private function processExistingAlias($article, $params, $isNew)
     {
-        $app = Factory::getApplication();
+        // ตรวจสอบว่าเป็นบทความใหม่หรือไม่ ถ้าเป็นบทความที่มีอยู่แล้ว
+        // และไม่ใช่ระบบที่สร้าง alias เอง ให้เคารพค่าที่ผู้ใช้กำหนด
+        $jinput = Factory::getApplication()->input;
+        $formData = $jinput->get('jform', array(), 'array');
+        
+        // ถ้าผู้ใช้กำหนด alias เอง ให้ใช้ค่านั้นโดยไม่เปลี่ยนแปลง
+        if (isset($formData['alias']) && !empty($formData['alias'])) {
+            // ใช้ค่า alias ที่ผู้ใช้กำหนดเอง โดยไม่มีการแก้ไขใดๆ
+            // ทั้งไม่ตัดความยาวและไม่เพิ่ม ID
+            return;
+        }
+        
+        // เฉพาะกรณีที่ alias มาจากระบบเท่านั้น จึงจะมีการประมวลผลต่อไปนี้
+        $appendId = (int) $params->get('append_id', 1);
+        $useIdOnly = (int) $params->get('use_id_only', 0);
+        
+        // ถ้าตั้งค่าให้ใช้ ID อย่างเดียว และมี ID บทความ
+        if ($appendId && $useIdOnly && !$isNew && isset($article->id) && !empty($article->id)) {
+            // ดึงค่า id_prefix
+            $idPrefix = $params->get('id_prefix', '');
+            
+            // ตรวจสอบ ID Prefix (ต้องเป็นภาษาอังกฤษ ตัวเลข และเครื่องหมายขีด)
+            if (!empty($idPrefix) && !preg_match('/^[a-zA-Z0-9\-_]+$/', $idPrefix)) {
+                $idPrefix = '';
+            }
+            
+            // พิมพ์ค่าเพื่อดีบัก (นำออกเมื่อแก้ไขเสร็จ)
+            error_log('Debug - ID Prefix: ' . $idPrefix);
+            error_log('Debug - Article ID: ' . $article->id);
+            
+            // กำหนด alias เป็น ID อย่างเดียว (อาจมีคำนำหน้า)
+            if (!empty($idPrefix)) {
+                $article->alias = $idPrefix . '-' . $article->id;
+            } else {
+                $article->alias = (string) $article->id;
+            }
+            
+            // พิมพ์ค่าเพื่อดีบัก (นำออกเมื่อแก้ไขเสร็จ)
+            error_log('Debug - Final alias: ' . $article->alias);
+            return;
+        }
+    }
+
+    /**
+     * ตัดความยาว alias และเพิ่ม ID ตามการตั้งค่า
+     *
+     * @param   string  $alias    alias ที่ต้องการประมวลผล
+     * @param   object  $params   พารามิเตอร์ของปลั๊กอิน
+     * @param   object  $article  ออบเจ็กต์บทความ
+     * @param   bool    $isNew    เป็นบทความใหม่หรือไม่
+     * @return  string  alias ที่ประมวลผลแล้ว
+     */
+    private function processAliasLength($alias, $params, $article, $isNew)
+    {
+        // ดึงค่าพารามิเตอร์
         $maxLength = (int) $params->get('alias_length', 100);
         $appendId = (int) $params->get('append_id', 1);
-        
-        // เก็บ alias เดิม
-        $alias = $article->alias;
+        $idPosition = $params->get('id_position', 'suffix');
+        $useIdOnly = (int) $params->get('use_id_only', 0);
+        $idPrefix = $params->get('id_prefix', '');
+
+        // ถ้าใช้เฉพาะ ID และบทความไม่ใช่บทความใหม่
+        if ($appendId && $useIdOnly && !$isNew && isset($article->id) && !empty($article->id)) {
+            // ตรวจสอบ ID Prefix (ต้องเป็นภาษาอังกฤษ ตัวเลข และเครื่องหมายขีด)
+            if (!empty($idPrefix) && !preg_match('/^[a-zA-Z0-9\-_]+$/', $idPrefix)) {
+                // กำหนดค่าเริ่มต้นใหม่ถ้ามีอักขระไม่ถูกต้อง
+                $idPrefix = '';
+            }
+            
+            // กำหนด alias เป็น ID อย่างเดียว (อาจมีคำนำหน้า)
+            if (!empty($idPrefix)) {
+                return $idPrefix . '-' . $article->id;
+            } else {
+                return (string) $article->id;
+            }
+        }
         
         // ตัดความยาวของ alias ถ้าจำเป็น
         if ($maxLength > 0) {
@@ -182,20 +266,23 @@ class PlgSystemSmartalias extends CMSPlugin
         if ($appendId && !$isNew && isset($article->id) && !empty($article->id)) {
             // ตรวจสอบว่ามี ID อยู่แล้วหรือไม่
             $idStr = (string) $article->id;
-            if (strpos($alias, $idStr) === false) {
-                $idPosition = $params->get('id_position', 'suffix');
-                $idSeparator = '-';
-                
-                if ($idPosition === 'prefix') {
-                    $alias = $idStr . $idSeparator . $alias;
-                } else {
-                    $alias = $alias . $idSeparator . $idStr;
+            $idPattern = preg_quote($idStr, '/');
+            
+            // ถ้ายังไม่มี ID ในตำแหน่งที่ต้องการ ให้เพิ่ม ID
+            if ($idPosition === 'prefix') {
+                // ตรวจสอบว่ามี ID นำหน้าอยู่แล้วหรือไม่
+                if (!preg_match('/^' . $idPattern . '\-/', $alias)) {
+                    $alias = $idStr . '-' . $alias;
+                }
+            } else {
+                // ตรวจสอบว่ามี ID ต่อท้ายอยู่แล้วหรือไม่
+                if (!preg_match('/\-' . $idPattern . '$/', $alias)) {
+                    $alias = $alias . '-' . $idStr;
                 }
             }
         }
         
-        // กำหนดค่า alias ให้กับบทความ
-        $article->alias = $alias;
+        return $alias;
     }
 
     public function onAfterRender()

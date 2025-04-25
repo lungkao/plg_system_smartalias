@@ -4,8 +4,8 @@
     <author>Pisan Chueachatchai</author>
     <authorEmail>office@colorpack.co.th</authorEmail>
     <authorUrl>https://colorpack.co.th/</authorUrl>
-    <version>1.1.4</version>
-    <creationDate>April 24, 2024</creationDate>
+    <version>1.1.5</version>
+    <creationDate>April 25, 2024</creationDate>
     <copyright>Copyright (C) 2024 Colorpack Creations Co.,Ltd. All rights reserved.</copyright>
     <license>GNU General Public License version 2 or later</license>
     <description>PLG_SYSTEM_SMARTALIAS_DESC</description>
@@ -42,7 +42,19 @@
                     <option value="0">JNO</option>
                 </field>
 
-                <!-- ฟิลด์สำหรับใช้ ID อย่างเดียว แสดงเมื่อ append_id เป็น Yes -->
+                <!-- ฟิลด์สำหรับตำแหน่งของ ID แสดงเมื่อเปิดใช้งานการเพิ่ม ID -->
+                <field name="id_position"
+                       type="radio"
+                       default="suffix"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_DESC"
+                       showon="append_id:1"
+                       class="btn-group">
+                    <option value="prefix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_PREFIX</option>
+                    <option value="suffix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_SUFFIX</option>
+                </field>
+
+                <!-- ฟิลด์สำหรับใช้ ID อย่างเดียว แสดงเมื่อเปิดใช้งานการเพิ่ม ID -->
                 <field name="use_id_only"
                        type="radio"
                        default="0"
@@ -53,26 +65,15 @@
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
                 </field>
-
-                <!-- ฟิลด์สำหรับคำนำหน้า ID แสดงเมื่อ use_id_only เป็น Yes -->
-                <field name="id_suffix"
+                
+                <!-- ฟิลด์สำหรับคำนำหน้า ID แสดงเมื่อเลือกใช้ ID อย่างเดียว -->
+                <field name="id_prefix"
                        type="text"
                        default=""
-                       label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX"
-                       description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_SUFFIX_DESC"
-                       showon="append_id:1[AND]use_id_only:1" />
-
-                <!-- ฟิลด์สำหรับตำแหน่งของ ID แสดงเมื่อไม่ได้ใช้ ID อย่างเดียว -->
-                <field name="id_position"
-                       type="radio"
-                       default="suffix"
-                       label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION"
-                       description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_DESC"
-                       showon="append_id:1[AND]use_id_only:0"
-                       class="btn-group">
-                    <option value="prefix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_PREFIX</option>
-                    <option value="suffix">PLG_SYSTEM_SMARTALIAS_FIELD_ID_POSITION_SUFFIX</option>
-                </field>
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_ID_PREFIX"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_ID_PREFIX_DESC"
+                       showon="append_id:1[AND]use_id_only:1"
+                       filter="string" />
 
                 <!-- ฟิลด์สำหรับแสดงตัวนับอักขระ -->
                 <field name="show_char_counter"
@@ -80,6 +81,17 @@
                        default="1"
                        label="PLG_SYSTEM_SMARTALIAS_FIELD_SHOW_CHAR_COUNTER"
                        description="PLG_SYSTEM_SMARTALIAS_FIELD_SHOW_CHAR_COUNTER_DESC"
+                       class="btn-group btn-group-yesno">
+                    <option value="1">JYES</option>
+                    <option value="0">JNO</option>
+                </field>
+
+                <!-- ฟิลด์สำหรับให้สร้าง alias ใหม่เมื่อช่อง alias ว่าง -->
+                <field name="force_alias_when_empty"
+                       type="radio"
+                       default="1"
+                       label="PLG_SYSTEM_SMARTALIAS_FIELD_FORCE_WHEN_EMPTY"
+                       description="PLG_SYSTEM_SMARTALIAS_FIELD_FORCE_WHEN_EMPTY_DESC"
                        class="btn-group btn-group-yesno">
                     <option value="1">JYES</option>
                     <option value="0">JNO</option>
